@@ -32,7 +32,10 @@ reprex_addin <- function() { # nocov start
   shiny::addResourcePath("reprex_addins", resource_path)
 
   ui <- miniUI::miniPage(
-    shiny::tags$head(shiny::includeCSS(file.path(resource_path, "reprex.css"))),
+    shiny::tags$head(
+      shiny::includeCSS(file.path(resource_path, "reprex.css")),
+      shiny::includeScript(file.path(resource_path, "reprex.js"))
+    ),
     miniUI::gadgetTitleBar(
       shiny::p(
         "Use",
