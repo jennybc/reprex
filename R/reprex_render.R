@@ -154,6 +154,7 @@ reprex_render_impl <- function(input,
     rtf   = pp_highlight(pp_md_to_r(md_file, comment = comment)),
     slack = pp_slackify(md_file),
     html  = pp_html_render(md_file),
+    bb    = pp_md_to_bb(md_file),
     md_file
   )
 
@@ -312,6 +313,42 @@ pp_slackify <- function(input) {
   slack_file <- md_file_slack(input)
   write_lines(output_lines, slack_file)
   slack_file
+}
+
+# used when venue is "bb"
+# Hack to replace markdwon with bbcode for code chunks and images
+# "code=php" to add default syntaxic colours for all BBcode versions.
+pp_md_to_bb <- function(input) {
+  output_lines <- read_lines(md_file(input))
+  output_lines <- sub("^```[^`]+$", "[code=php]", output_lines, perl = TRUE)
+  output_lines <- sub("^```$", "[/code]", output_lines, perl = TRUE)
+  output_lines <- image_links_to_bb(output_lines)
+
+  code_index <- unlist(mapply(
+    FUN = seq,
+    grep("[code=php]", output_lines, fixed = TRUE),
+    grep("[/code]", output_lines, fixed = TRUE)
+  ))
+  img_index <- grep("[img]", output_lines, fixed = TRUE)
+
+  output_lines[-c(code_index, img_index)] <- italic_to_bb(
+    bold_to_bb(
+      output_lines[-c(code_index, img_index)]
+    )
+  )
+
+  bbout_file <- bb_file(input)
+  write_lines(output_lines, bbout_file)
+  bbout_file
+}
+image_links_to_bb <- function(x) {
+  sub("(^!\\[\\]\\()(.+)(\\)$)", "[img]\\2[/img]", x, perl = TRUE)
+}
+bold_to_bb <- function(x) {
+  gsub("(__([^_]+)__)|(\\*\\*([^*]+)\\*\\*)", "[b]\\2\\4[/b]", x, perl = TRUE)
+}
+italic_to_bb <- function(x) {
+  gsub("(_([^_]+)_)|(\\*([^*]+)\\*)", "[i]\\2\\4[/i]", x, perl = TRUE)
 }
 
 # remove "info strings" from opening code fences, e.g. ```r
